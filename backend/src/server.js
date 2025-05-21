@@ -11,11 +11,12 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Security middleware
-app.use(helmet());
-
-// CORS configuration
+app.use(helmet({crossOriginResourcePolicy: { policy: 'cross-origin },contentSecurityPolicy: false }));
+// CORS configuration - Allow all for troubleshooting
 app.use(cors({
-  origin: ['https://www.vetfile.ai', 'https://vetfile.ai', 'http://localhost:3000'],
+  origin: '*',  // Allow all origins for now
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true
 }));
 
