@@ -91,8 +91,9 @@ exports.analyzeDocuments = async (req, res) => {
     let analysis;
     
     // Check if we should use mock data or real AI
-    const useMockAI = process.env.USE_MOCK_AI === 'true';
-    
+const useMockAI = process.env.USE_MOCK_AI === 'true';
+console.log('USE_MOCK_AI env var:', process.env.USE_MOCK_AI);
+console.log('Using mock AI?', useMockAI); 
     if (useMockAI) {
       console.log('Using mock analysis data');
       // Use mock data as before
