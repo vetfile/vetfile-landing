@@ -1,0 +1,174 @@
+// src/services/openaiService.js
+const { OpenAI } = require('openai');
+require('dotenv').config();
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+// Service for OpenAI interactions
+class OpenAIService {
+  /**
+   * Analyze veteran documents using GPT-4o
+   * @param {string} documentText - The extracted text from veteran documents
+   * @returns {Promise<object>} - Structured analysis of potential VA claims
+   */
+  async analyzeVeteranDocuments(documentText) {
+    try {
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert VA disability claims analyst with deep knowledge of military service records, VA disability criteria, and the claims process. Your task is to analyze veteran documents to identify potential disability claims based on service history, documented medical conditions, and service connection evidence.
+            
+You will return a structured JSON analysis with the following sections:
+1. Veteran information extracted from documents
+2. All potential disability claims with supporting evidence
+3. Service details that support the claims
+4. Recommendations for additional evidence if needed
+
+Be thorough in identifying ALL potential claims, focusing on:
+- Service-connected injuries and conditions
+- Presumptive conditions based on service period/location
+- Secondary conditions
+- Occupational hazards common to MOS/assignments
+- Environmental exposures
+
+For each potential claim, include:
+- Specific condition name (as recognized by VA)
+- Evidence found in the documents
+- Confidence level (1-100)
+- Relevant CFR references
+- Category (physical, mental, etc.)`
+          },
+          {
+            role: 'user',
+            content: `Please analyze these veteran documents to identify potential VA disability claims:
+
+DOCUMENT TEXT:
+${documentText}
+
+Analyze the documents for:
+1. Veteran's personal information (name, service number, branch, dates of service, rank, etc.)
+2. Medical conditions documented during service
+3. Incidents or injuries during service
+4. Exposure to hazardous environments (burn pits, Agent Orange, radiation, etc.)
+5. Combat experience and potential for PTSD
+6. Occupational hazards based on MOS and assignments
+7. All potential presumptive conditions based on service period and locations
+
+For EACH potential disability claim:
+- Identify the specific condition
+- Extract all supporting evidence from the documents
+- Provide VA CFR references when applicable
+- Rate confidence level (1-100) based on evidence strength
+- Categorize as physical, mental, or environmental
+- Note if it could be a primary or secondary condition
+
+Return your analysis in the following JSON format:
+
+{
+  "veteranInfo": {
+    "name": "string",
+    "serviceNumber": "string",
+    "branch": "string",
+    "serviceStartDate": "YYYY-MM-DD",
+    "serviceEndDate": "YYYY-MM-DD",
+    "rank": "string",
+    "dischargeType": "string"
+  },
+  "potentialClaims": [
+    {
+      "condition": "string",
+      "description": "string",
+      "evidence": ["array of supporting evidence from document"],
+      "cfrReference": "string",
+      "confidenceScore": 0-100,
+      "category": "physical|mental|environmental|other",
+      "isPresumed": boolean,
+      "isPrimary": boolean
+    }
+  ],
+  "serviceInfo": {
+    "deployments": ["array of deployments"],
+    "mos": ["array of MOSs/occupations"],
+    "combatExperience": boolean,
+    "awardsDecorations": ["array of awards"],
+    "incidents": ["array of documented incidents"]
+  },
+  "recommendations": {
+    "additionalEvidence": ["array of suggested additional evidence to strengthen claims"],
+    "priorityClaims": ["array of conditions with strongest evidence"]
+  }
+}`
+          }
+        ],
+        temperature: 0.2,
+        max_tokens: 4000,
+        response_format: { type: 'json_object' }
+      });
+
+      // Extract and parse response
+      const analysisText = response.choices[0].message.content;
+      return JSON.parse(analysisText);
+    } catch (error) {
+      console.error('OpenAI API error:', error);
+      
+      // Return error structure
+      return {
+        error: true,
+        message: error.message,
+        // Include a fallback analysis to prevent application errors
+        fallbackAnalysis: this.generateFallbackAnalysis()
+      };
+    }
+  }
+
+  /**
+   * Generate fallback analysis in case of API errors
+   * @returns {object} - Basic analysis structure
+   */
+  generateFallbackAnalysis() {
+    return {
+      veteranInfo: {
+        name: "Unable to extract",
+        serviceNumber: "Unable to extract",
+        branch: "Unable to extract",
+        serviceStartDate: null,
+        serviceEndDate: null,
+        rank: "Unable to extract",
+        dischargeType: "Unable to extract"
+      },
+      potentialClaims: [
+        {
+          condition: "Analysis Error",
+          description: "There was an error analyzing your documents. This could be due to technical issues or document quality.",
+          evidence: ["Error processing document content"],
+          cfrReference: null,
+          confidenceScore: 0,
+          category: "other",
+          isPresumed: false,
+          isPrimary: true
+        }
+      ],
+      serviceInfo: {
+        deployments: [],
+        mos: [],
+        combatExperience: false,
+        awardsDecorations: [],
+        incidents: []
+      },
+      recommendations: {
+        additionalEvidence: [
+          "Try uploading clearer copies of your documents",
+          "Include both your DD214 and medical records if available"
+        ],
+        priorityClaims: []
+      }
+    };
+  }
+}
+
+module.exports = new OpenAIService();
