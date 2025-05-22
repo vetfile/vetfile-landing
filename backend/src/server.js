@@ -1,5 +1,4 @@
 const express = require('express');
-const express = require('express');
 console.log('✅ Express imported');
 
 const cors = require('cors');
