@@ -25,10 +25,14 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Ensure uploads directory exists
+console.log('Debug: About to check uploads directory');
 const uploadsDir = path.join(__dirname, '../uploads');
+console.log('Debug: uploadsDir path:', uploadsDir);
 if (!fs.existsSync(uploadsDir)) {
+  console.log('Debug: Creating uploads directory');
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
+console.log('Debug: Uploads directory setup complete');
 // Import routes
 const documentRoutes = require('./routes/documentRoutes');
 
