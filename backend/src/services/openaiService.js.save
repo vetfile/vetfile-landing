@@ -1,4 +1,4 @@
-// src/services/openaiService.js
+/ src/services/openaiService.js
 const { OpenAI } = require('openai');
 require('dotenv').config();
 
@@ -18,37 +18,23 @@ class OpenAIService {
     try {
       const response = await openai.chat.completions.create({
         model: 'gpt-4o',
-messages: [
+        messages: [
           {
             role: 'system',
-            content: `You are an expert VA disability claims analyst. You must ONLY extract information that is explicitly written in the document provided. DO NOT make assumptions, use placeholder data, or generate fictional information.
-
-CRITICAL INSTRUCTIONS:
-- ONLY use information that is clearly visible in the document text
-- If information is not present or unclear, mark it as "Not found in document"
-- DO NOT use placeholder names like "John Doe" or fake numbers
-- Extract EXACT text as written in the document
-- Pay special attention to DD Form 214 fields and their actual values
-
-For DD Form 214 documents, extract information from these specific fields:
-1. NAME (Last, First, Middle) - Extract the actual name from field 1
-2. SSN - Extract from field 3 (if visible)
-3. GRADE, RATE OR RANK - Extract from field 4a
-4. DATE OF BIRTH - Extract from field 5
-5. DATE ENTERED AD THIS PERIOD - Extract from field 12a
-6. SEPARATION DATE THIS PERIOD - Extract from field 12b
-7. PRIMARY SPECIALTY - Extract from field 11 (MOS and description)
-8. DECORATIONS, MEDALS, BADGES - Extract from field 13
-9. MILITARY EDUCATION - Extract from field 14
-10. MEMBER SIGNATURE and DATE - Extract actual signature info
-
-IMPORTANT: If you cannot find specific information in the document, respond with "Unable to extract from document" rather than making up information.
-
+            content: `You are an expert VA disability claims analyst with deep knowledge of military service records, VA disability criteria, and the claims process. Your task is to analyze veteran documents to identify potential disability claims based on service history, documented medical conditions, and service connection evidence.
+            
 You will return a structured JSON analysis with the following sections:
 1. Veteran information extracted from documents
 2. All potential disability claims with supporting evidence
 3. Service details that support the claims
 4. Recommendations for additional evidence if needed
+
+Be thorough in identifying ALL potential claims, focusing on:
+- Service-connected injuries and conditions
+- Presumptive conditions based on service period/location
+- Secondary conditions
+- Occupational hazards common to MOS/assignments
+- Environmental exposures
 
 For each potential claim, include:
 - Specific condition name (as recognized by VA)
@@ -57,7 +43,6 @@ For each potential claim, include:
 - Relevant CFR references
 - Category (physical, mental, etc.)`
           },
-
           {
             role: 'user',
             content: `Please analyze these veteran documents to identify potential VA disability claims:
