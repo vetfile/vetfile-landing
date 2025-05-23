@@ -179,12 +179,11 @@ Return your analysis in the following JSON format:
         additionalEvidence: [
           "Try uploading clearer copies of your documents",
           "Include both your DD214 and medical records if available"
-        ],
-        priorityClaims: []
+        ],        priorityClaims: []
       }
     };
   }
-}
+
 /**
    * Analyze document using OpenAI Vision API (for scanned PDFs/images)
    * @param {string} base64File - Base64 encoded file data
