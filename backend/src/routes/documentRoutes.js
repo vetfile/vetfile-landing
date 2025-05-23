@@ -43,6 +43,7 @@ const upload = multer({
 
 // Routes
 router.post('/upload', upload.array('documents', 10), documentController.uploadDocuments);
+router.post('/process-pdf', upload.single('document'), documentController.processPDF);
 router.post('/analyze/:uploadId', documentController.analyzeDocuments);
 router.get('/analysis/:uploadId', documentController.getAnalysis);
 router.post('/generate-form/:uploadId', documentController.generateForm);

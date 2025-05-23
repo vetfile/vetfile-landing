@@ -185,5 +185,50 @@ Return your analysis in the following JSON format:
     };
   }
 }
+/**
+   * Analyze document using OpenAI Vision API (for scanned PDFs/images)
+   * @param {string} base64File - Base64 encoded file data
+   * @param {string} mimeType - File MIME type
+   * @returns {Promise<string>} - Extracted text content
+   */
+  async analyzeDocumentWithVision(base64File, mimeType) {
+    try {
+      console.log('🔍 Using OpenAI Vision API for document analysis');
+      
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a document text extraction specialist. Extract ALL text content from the provided document image/PDF. Return ONLY the extracted text content, preserving the original structure and formatting as much as possible. Do not add any commentary or analysis - just return the raw text content.`
+          },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: 'Please extract all text content from this document:'
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:${mimeType};base64,${base64File}`
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 4000,
+        temperature: 0.1
+      });
 
+      const extractedText = response.choices[0].message.content;
+      console.log('✅ Vision API extracted', extractedText.length, 'characters');
+      
+      return extractedText;
+    } catch (error) {
+      console.error('Vision API error:', error);
+      throw new Error(`Vision API failed: ${error.message}`);
+    }
+  }
 module.exports = new OpenAIService();

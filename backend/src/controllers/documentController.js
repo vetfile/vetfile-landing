@@ -397,3 +397,78 @@ function getMockAnalysis() {
     }
   };
 }
+// Add this new function to your documentController.js
+
+exports.processPDF = async (req, res) => {
+  try {
+    console.log('🔍 Starting smart PDF processing');
+    
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No PDF file uploaded'
+      });
+    }
+
+    const filePath = req.file.path;
+    console.log('🔍 Processing file:', filePath);
+
+    // Step 1: Try text extraction first
+    let extractedText = '';
+    let processingMethod = '';
+    
+    try {
+      const textResult = await documentProcessingService.extractText(filePath);
+      extractedText = textResult.trim();
+      
+      console.log('🔍 Text extraction result length:', extractedText.length);
+      console.log('🔍 Sample text (first 100 chars):', extractedText.substring(0, 100));
+      
+      // Step 2: Determine if we have usable text
+      const isTextUsable = extractedText.length > 200 && 
+                          extractedText.includes('CERTIFICATE') && 
+                          (extractedText.includes('DD') || extractedText.includes('214'));
+      
+      if (isTextUsable) {
+        console.log('✅ Using text-based processing');
+        processingMethod = 'text-extraction';
+      } else {
+        console.log('🔍 Text extraction insufficient, switching to Vision API');
+        processingMethod = 'vision-api';
+        
+        // Step 3: Use Vision API for scanned/image PDFs
+        const fs = require('fs');
+        const fileBuffer = fs.readFileSync(filePath);
+        const base64File = fileBuffer.toString('base64');
+        
+        // Send to OpenAI Vision API
+        extractedText = await openaiService.analyzeDocumentWithVision(base64File, req.file.mimetype);
+      }
+      
+    } catch (error) {
+      console.error('PDF processing error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to process PDF',
+        error: error.message
+      });
+    }
+
+    // Step 4: Return processed result
+    res.status(200).json({
+      success: true,
+      processingMethod: processingMethod,
+      extractedTextLength: extractedText.length,
+      extractedText: extractedText.substring(0, 500), // First 500 chars for preview
+      message: `Successfully processed PDF using ${processingMethod}`
+    });
+
+  } catch (error) {
+    console.error('Smart PDF processing error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to process PDF',
+      error: error.message
+    });
+  }
+};
