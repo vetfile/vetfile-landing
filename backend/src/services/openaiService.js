@@ -230,4 +230,6 @@ Return your analysis in the following JSON format:
       throw new Error(`Vision API failed: ${error.message}`);
     }
   }
+
+}  // This closes the OpenAIService class
 module.exports = new OpenAIService();
