@@ -194,7 +194,7 @@ Return your analysis in the following JSON format:
     try {
       console.log('🔍 Using OpenAI Vision API for document analysis');
       
-      const response = await this.openai.chat.completions.create({
+      const response = await openai.chat.completions.create({
         model: 'gpt-4o',
         messages: [
           {
