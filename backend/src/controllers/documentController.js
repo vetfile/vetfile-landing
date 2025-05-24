@@ -408,8 +408,8 @@ exports.processPDF = async (req, res) => {
     let processingMethod = '';
     
     try {
-  const textResult = await documentProcessingService.extractText(filePath, req.file.mimetype);
-  extractedText = textResult.trim();
+      const textResult = await documentProcessingService.extractText(filePath, req.file.mimetype);
+      extractedText = textResult.trim();
       
       console.log('🔍 Text extraction result length:', extractedText.length);
       console.log('🔍 Sample text (first 100 chars):', extractedText.substring(0, 100));
@@ -455,7 +455,8 @@ exports.processPDF = async (req, res) => {
           extractedText = 'Error: Could not process PDF with Vision API';
         }
       }
-    } catch (error) 
+      
+    } catch (error) {
       console.error('PDF processing error:', error);
       return res.status(500).json({
         success: false,
