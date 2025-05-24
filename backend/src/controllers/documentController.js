@@ -488,4 +488,4 @@ exports.processPDF = async (req, res) => {
       error: error.message
     });
   }
-};
+}
