@@ -397,7 +397,6 @@ function getMockAnalysis() {
     }
   };
 }
-// Add this new function to your documentController.js
 
 exports.processPDF = async (req, res) => {
   try {
@@ -430,29 +429,47 @@ exports.processPDF = async (req, res) => {
                           (extractedText.includes('DD') || extractedText.includes('214'));
       
       if (isTextUsable) {
-        console.log('✅ Using text-based processing');
+       console.log('✅ Using text-based processing'); consolelog('✅ Using text-based processing');
         processingMethod = 'text-extraction';
       } else {
         console.log('🔍 Text extraction insufficient, switching to Vision API');
         processingMethod = 'vision-api';
         
-        // Step 3: Use Vision API for scanned/image PDFs
+        // Step 3: Convert PDF to image for Vision API
+        const pdf2pic = require('pdf2pic');
         const fs = require('fs');
-        const fileBuffer = fs.readFileSync(filePath);
-        const base64File = fileBuffer.toString('base64');
         
-        // Send to OpenAI Vision API
-        extractedText = await openaiService.analyzeDocumentWithVision(base64File, req.file.mimetype);
+        try {
+          // Convert PDF to image
+          console.log('🔍 Converting PDF to image...');
+          const convertOptions = {
+            density: 200,           // Image quality
+            saveFilename: 'temp_page',
+            savePath: './temp/',
+            format: 'png',
+            width: 2000,
+            height: 2000
+          };
+          
+          const convert = pdf2pic.fromPath(filePath, convertOptions);
+          const pageResult = await convert(1); // Convert first page
+          
+          // Read the converted image
+          const imageBuffer = fs.readFileSync(pageResult.path);
+          const base64Image = imageBuffer.toString('base64');
+          
+          // Send image to OpenAI Vision API
+          console.log('🔍 Sending image to Vision API...');
+          extractedText = await openaiService.analyzeDocumentWithVision(base64Image, 'image/png');
+          
+          // Clean up temporary image
+          fs.unlinkSync(pageResult.path);
+          
+        } catch (visionError) {
+          console.error('Vision API processing failed:', visionError);
+          extractedText = 'Error: Could not process PDF with Vision API';
+        }
       }
-      
-    } catch (error) {
-      console.error('PDF processing error:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to process PDF',
-        error: error.message
-      });
-    }
 
     // Step 4: Return processed result
     res.status(200).json({
