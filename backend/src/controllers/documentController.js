@@ -425,38 +425,37 @@ exports.processPDF = async (req, res) => {
         console.log('🔍 Text extraction insufficient, switching to Vision API');
         processingMethod = 'vision-api';
         
-        const pdf2pic = require('pdf2pic');
+        const pdfPoppler = require('pdf-poppler');
         const fs = require('fs');
         
         try {
           console.log('🔍 Converting PDF to image...');
-          const convertOptions = {
-            density: 200,
-            saveFilename: 'temp_page',
-            savePath: './temp/',
+          const options = {
             format: 'png',
-            width: 2000,
-            height: 2000
+            out_dir: './temp/',
+            out_prefix: 'page',
+            page: 1
           };
           
-          const convert = pdf2pic.fromPath(filePath, convertOptions);
-          const pageResult = await convert(1);
+          const imagePath = await pdfPoppler.convert(filePath, options);
+          console.log('🔍 PDF converted to image:', imagePath);
           
-          const imageBuffer = fs.readFileSync(pageResult.path);
+          // Read the converted image
+          const imageBuffer = fs.readFileSync(imagePath[0]);
           const base64Image = imageBuffer.toString('base64');
           
           console.log('🔍 Sending image to Vision API...');
           extractedText = await openaiService.analyzeDocumentWithVision(base64Image, 'image/png');
           
-          fs.unlinkSync(pageResult.path);
+          // Clean up temporary image
+          fs.unlinkSync(imagePath[0]);
           
         } catch (visionError) {
           console.error('Vision API processing failed:', visionError);
           extractedText = 'Error: Could not process PDF with Vision API';
         }
       }
-      
-    } catch (error) {
+    } catch (error) 
       console.error('PDF processing error:', error);
       return res.status(500).json({
         success: false,
