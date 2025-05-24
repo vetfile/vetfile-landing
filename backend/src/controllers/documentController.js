@@ -30,7 +30,7 @@ exports.uploadDocuments = async (req, res) => {
       path: file.path,
       size: file.size,
       mimetype: file.mimetype,
-      documentType: req.body.documentType || 'unknown', // User can specify document type
+      documentType: req.body.documentType || 'unknown',
       uploadedAt: new Date().toISOString()
     }));
 
@@ -90,22 +90,19 @@ exports.analyzeDocuments = async (req, res) => {
     let analysis;
     
     // Check if we should use mock data or real AI
-const useMockAI = process.env.USE_MOCK_AI === 'true';
-console.log('USE_MOCK_AI env var:', process.env.USE_MOCK_AI);
-console.log('Using mock AI?', useMockAI); 
+    const useMockAI = process.env.USE_MOCK_AI === 'true';
+    console.log('USE_MOCK_AI env var:', process.env.USE_MOCK_AI);
+    console.log('Using mock AI?', useMockAI); 
     if (useMockAI) {
       console.log('Using mock analysis data');
-      // Use mock data as before
       analysis = getMockAnalysis();
     } else {
       console.log('Using OpenAI for analysis');
-      // Use real OpenAI analysis
       analysis = await openaiService.analyzeVeteranDocuments(combinedText);
       
       // Check if there was an error with OpenAI
       if (analysis.error) {
         console.error('OpenAI analysis error:', analysis.message);
-        // Use the fallback analysis
         analysis = analysis.fallbackAnalysis;
       }
     }
@@ -241,24 +238,21 @@ exports.generateForm = async (req, res) => {
 
     // Structure the form data
     const formData = {
-      // Form metadata
       formId: uuidv4(),
       formType: 'VA-21-526EZ',
       generatedDate: new Date().toISOString(),
       
-      // Veteran information
       veteran: {
         name: veteranInfo.name || '',
         serviceNumber: veteranInfo.serviceNumber || '',
-        ssn: '', // Would need to be provided by the user
-        dob: '', // Would need to be provided by the user
+        ssn: '',
+        dob: '',
         branch: veteranInfo.branch || '',
         serviceStartDate: veteranInfo.serviceStartDate || '',
         serviceEndDate: veteranInfo.serviceEndDate || '',
         rank: veteranInfo.rank || '',
         dischargeType: veteranInfo.dischargeType || '',
         
-        // Contact info (would be provided by user in production)
         address: {
           street: '',
           city: '',
@@ -269,7 +263,6 @@ exports.generateForm = async (req, res) => {
         email: ''
       },
       
-      // Disability claims
       disabilities: selectedClaimData.map((claim, index) => ({
         id: uuidv4(),
         sequence: index + 1,
@@ -281,11 +274,10 @@ exports.generateForm = async (req, res) => {
         category: claim.category || 'other',
         isPrimary: claim.isPrimary || true,
         isPresumed: claim.isPresumed || false,
-        dateOfOnset: '', // Would need to be provided by user
+        dateOfOnset: '',
         relatedMilitaryService: true
       })),
       
-      // Service information
       serviceDetails: {
         deployments: serviceInfo?.deployments || [],
         mos: serviceInfo?.mos || [],
@@ -412,7 +404,6 @@ exports.processPDF = async (req, res) => {
     const filePath = req.file.path;
     console.log('🔍 Processing file:', filePath);
 
-    // Step 1: Try text extraction first
     let extractedText = '';
     let processingMethod = '';
     
@@ -423,27 +414,24 @@ exports.processPDF = async (req, res) => {
       console.log('🔍 Text extraction result length:', extractedText.length);
       console.log('🔍 Sample text (first 100 chars):', extractedText.substring(0, 100));
       
-      // Step 2: Determine if we have usable text
       const isTextUsable = extractedText.length > 200 && 
                           extractedText.includes('CERTIFICATE') && 
                           (extractedText.includes('DD') || extractedText.includes('214'));
       
       if (isTextUsable) {
-       console.log('✅ Using text-based processing'); consolelog('✅ Using text-based processing');
+        console.log('✅ Using text-based processing');
         processingMethod = 'text-extraction';
       } else {
         console.log('🔍 Text extraction insufficient, switching to Vision API');
         processingMethod = 'vision-api';
         
-        // Step 3: Convert PDF to image for Vision API
         const pdf2pic = require('pdf2pic');
         const fs = require('fs');
         
         try {
-          // Convert PDF to image
           console.log('🔍 Converting PDF to image...');
           const convertOptions = {
-            density: 200,           // Image quality
+            density: 200,
             saveFilename: 'temp_page',
             savePath: './temp/',
             format: 'png',
@@ -452,17 +440,14 @@ exports.processPDF = async (req, res) => {
           };
           
           const convert = pdf2pic.fromPath(filePath, convertOptions);
-          const pageResult = await convert(1); // Convert first page
+          const pageResult = await convert(1);
           
-          // Read the converted image
           const imageBuffer = fs.readFileSync(pageResult.path);
           const base64Image = imageBuffer.toString('base64');
           
-          // Send image to OpenAI Vision API
           console.log('🔍 Sending image to Vision API...');
           extractedText = await openaiService.analyzeDocumentWithVision(base64Image, 'image/png');
           
-          // Clean up temporary image
           fs.unlinkSync(pageResult.path);
           
         } catch (visionError) {
@@ -470,13 +455,21 @@ exports.processPDF = async (req, res) => {
           extractedText = 'Error: Could not process PDF with Vision API';
         }
       }
+      
+    } catch (error) {
+      console.error('PDF processing error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to process PDF',
+        error: error.message
+      });
+    }
 
-    // Step 4: Return processed result
     res.status(200).json({
       success: true,
       processingMethod: processingMethod,
       extractedTextLength: extractedText.length,
-      extractedText: extractedText.substring(0, 500), // First 500 chars for preview
+      extractedText: extractedText.substring(0, 500),
       message: `Successfully processed PDF using ${processingMethod}`
     });
 
@@ -488,4 +481,4 @@ exports.processPDF = async (req, res) => {
       error: error.message
     });
   }
-}
+};
