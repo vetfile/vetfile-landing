@@ -408,8 +408,8 @@ exports.processPDF = async (req, res) => {
     let processingMethod = '';
     
     try {
-      const textResult = await documentProcessingService.extractText(filePath);
-      extractedText = textResult.trim();
+  const textResult = await documentProcessingService.extractText(filePath, req.file.mimetype);
+  extractedText = textResult.trim();
       
       console.log('🔍 Text extraction result length:', extractedText.length);
       console.log('🔍 Sample text (first 100 chars):', extractedText.substring(0, 100));
