@@ -230,6 +230,96 @@ Return your analysis in the following JSON format:
       throw new Error(`Vision API failed: ${error.message}`);
     }
   }
-
+/**
+   * Process document using OpenAI's file processing (like ChatGPT)
+   * @param {string} filePath - Path to the document file
+   * @returns {Promise<string>} - Extracted text content
+   */
+  async processDocumentFile(filePath) {
+    try {
+      console.log('🔍 Using OpenAI file processing (ChatGPT method)');
+      
+      const fs = require('fs');
+      
+      // Step 1: Upload file to OpenAI
+      console.log('📤 Uploading file to OpenAI...');
+      const file = await openai.files.create({
+        file: fs.createReadStream(filePath),
+        purpose: 'assistants'
+      });
+      
+      console.log(`✅ File uploaded with ID: ${file.id}`);
+      
+      // Step 2: Create assistant with file access
+      const assistant = await openai.beta.assistants.create({
+        name: "Document Reader",
+        instructions: "You are a document reader. Extract ALL text content from uploaded files exactly as written. Return only the extracted text with no additional commentary.",
+        model: "gpt-4o",
+        tools: [{ type: "file_search" }],
+        tool_resources: {
+          file_search: {
+            vector_store_ids: []
+          }
+        }
+      });
+      
+      // Step 3: Create vector store and add file
+      const vectorStore = await openai.beta.vectorStores.create({
+        name: "Document Store"
+      });
+      
+      await openai.beta.vectorStores.files.create(vectorStore.id, {
+        file_id: file.id
+      });
+      
+      // Step 4: Update assistant with vector store
+      await openai.beta.assistants.update(assistant.id, {
+        tool_resources: {
+          file_search: {
+            vector_store_ids: [vectorStore.id]
+          }
+        }
+      });
+      
+      // Step 5: Create thread and get response
+      const thread = await openai.beta.threads.create();
+      
+      await openai.beta.threads.messages.create(thread.id, {
+        role: "user",
+        content: "Please extract all text content from the uploaded document. Return the complete text exactly as it appears in the document."
+      });
+      
+      const run = await openai.beta.threads.runs.create(thread.id, {
+        assistant_id: assistant.id
+      });
+      
+      // Step 6: Wait for completion and get result
+      let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+      
+      while (runStatus.status !== 'completed') {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+        
+        if (runStatus.status === 'failed') {
+          throw new Error('Assistant run failed');
+        }
+      }
+      
+      const messages = await openai.beta.threads.messages.list(thread.id);
+      const extractedText = messages.data[0].content[0].text.value;
+      
+      // Step 7: Cleanup
+      await openai.files.del(file.id);
+      await openai.beta.assistants.del(assistant.id);
+      await openai.beta.vectorStores.del(vectorStore.id);
+      
+      console.log(`✅ Extracted ${extractedText.length} characters using file processing`);
+      return extractedText;
+      
+    } catch (error) {
+      console.error('File processing error:', error);
+      throw new Error(`Document processing failed: ${error.message}`);
+    }
+  }
 }  // This closes the OpenAIService class
 module.exports = new OpenAIService();

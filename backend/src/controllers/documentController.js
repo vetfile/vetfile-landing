@@ -422,37 +422,16 @@ exports.processPDF = async (req, res) => {
         console.log('✅ Using text-based processing');
         processingMethod = 'text-extraction';
       } else {
-        console.log('🔍 Text extraction insufficient, switching to Vision API');
-        processingMethod = 'vision-api';
-        
-        const pdf2pic = require('pdf2pic');
-        const fs = require('fs');
+        console.log('🔍 Text extraction insufficient, switching to file processing');
+        processingMethod = 'file-processing';
         
         try {
-          console.log('🔍 Converting PDF to image...');
-          const convertOptions = {
-            density: 200,
-            saveFilename: 'temp_page',
-            savePath: './temp/',
-            format: 'png',
-            width: 2000,
-            height: 2000
-          };
+          console.log('🔍 Using OpenAI file processing (ChatGPT method)...');
+          extractedText = await openaiService.processDocumentFile(filePath);
           
-          const convert = pdf2pic.fromPath(filePath, convertOptions);
-          const pageResult = await convert(1);
-          
-          const imageBuffer = fs.readFileSync(pageResult.path);
-          const base64Image = imageBuffer.toString('base64');
-          
-          console.log('🔍 Sending image to Vision API...');
-          extractedText = await openaiService.analyzeDocumentWithVision(base64Image, 'image/png');
-          
-          fs.unlinkSync(pageResult.path);
-          
-        } catch (visionError) {
-          console.error('Vision API processing failed:', visionError);
-          extractedText = 'Error: Could not process PDF with Vision API';
+        } catch (fileError) {
+          console.error('File processing failed:', fileError);
+          extractedText = 'Error: Could not process document with file processing';
         }
       }
       
