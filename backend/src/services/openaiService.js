@@ -251,7 +251,7 @@ Return your analysis in the following JSON format:
       console.log(`✅ File uploaded with ID: ${file.id}`);
       
       // Step 2: Create assistant with file access
-      const assistant = await openai.beta.assistants.create({
+      const assistant = await this. openai.beta.assistants.create({
         name: "Document Reader",
         instructions: "You are a document reader. Extract ALL text content from uploaded files exactly as written. Return only the extracted text with no additional commentary.",
         model: "gpt-4o",
